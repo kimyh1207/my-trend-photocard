@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halloween Photo Booth | 나만의 할로윈 포토 스트립</title>
+<style>
+  :root{
+    --bg:#100d1c;--panel:#1b1630;--panel2:#241b3d;--ink:#fff8ee;
+    --muted:#c7bdd9;--orange:#ff8a28;--purple:#a879ff;--pink:#ff6b9d;
+    --line:rgba(255,255,255,.13);--shadow:0 18px 50px rgba(0,0,0,.28)
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(ellipse at 15% 0%,#39204e 0,transparent 36%),radial-gradient(ellipse at 95% 20%,#45213d 0,transparent 30%),var(--bg);min-height:100vh}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .shell{width:min(1180px,100% - 32px);margin:auto;padding:28px 0 48px}
+  header{text-align:center;margin-bottom:26px}
+  .eyebrow{display:inline-block;padding:7px 12px;border:1px solid #7b5a9b;border-radius:999px;color:#f7c9ff;background:#251934;font-size:.8rem;letter-spacing:.08em}
+  h1{font-size:clamp(2rem,5vw,3.7rem);line-height:1.05;margin:16px 0 10px;letter-spacing:-.04em}
+  h1 span{color:var(--orange);text-shadow:0 0 28px #ff8a2844}
+  .intro{color:var(--muted);max-width:650px;margin:0 auto;line-height:1.65}
+  .layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:20px;align-items:start}
+  .panel{background:linear-gradient(145deg,rgba(37,28,62,.96),rgba(24,19,41,.96));border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow);min-width:0}
+  .panel h2{font-size:1.15rem;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 16px;line-height:1.5}
+  .camera-stage{position:relative;background:#090811;border:1px solid #49365c;border-radius:18px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}
+  video,.upload-preview{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+  .camera-placeholder{padding:24px;text-align:center;color:#cfc3df}
+  .camera-placeholder .big{font-size:3rem;display:block;margin-bottom:10px}
+  .camera-status{position:absolute;top:12px;left:12px;background:#100d1cce;border:1px solid #ffffff28;border-radius:999px;padding:6px 10px;font-size:.75rem}
+  .camera-status:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff8a28;margin-right:6px}
+  .controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .btn{border:1px solid var(--line);background:#302448;color:var(--ink);padding:10px 14px;border-radius:12px;font-weight:700;transition:transform .15s,filter .15s}
+  .btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(110deg,#ff8a28,#ffb347);border:0;color:#27142a}
+  .btn.purple{background:linear-gradient(110deg,#a879ff,#d18bff);border:0;color:#21132e}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .file-label{display:inline-flex;align-items:center;gap:7px}
+  input[type=file]{display:none}
+  .counter{margin:16px 0 9px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.9rem}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .slot{aspect-ratio:3/4;border:1px dashed #76618f;border-radius:12px;background:#100d1c;overflow:hidden;position:relative;display:grid;place-items:center;color:#786a8e;text-align:center;font-size:.82rem}
+  .slot img{width:100%;height:100%;object-fit:cover;display:block}
+  .slot .num{position:absolute;left:7px;top:7px;background:#100d1cdd;border-radius:7px;padding:3px 7px;color:white;font-size:.72rem}
+  .slot .remove{position:absolute;right:6px;top:6px;border:0;border-radius:50%;width:26px;height:26px;background:#100d1cdd;color:white}
+  .options{display:grid;gap:15px}
+  .option-title{display:block;font-weight:800;margin-bottom:9px}
+  .choices{display:flex;flex-wrap:wrap;gap:8px}
+  .choice{background:#171126;color:#e9ddf6;border:1px solid #5b486f;border-radius:10px;padding:8px 10px}
+  .choice[aria-pressed="true"]{border-color:var(--orange);background:#482a2c;box-shadow:inset 0 0 0 1px var(--orange)}
+  .sticker{font-size:1.35rem;min-width:45px}
+  .preview-wrap{display:flex;justify-content:center;padding:16px;background:#100d1c;border:1px solid var(--line);border-radius:16px}
+  #stripCanvas{width:min(100%,270px);height:auto;display:block;box-shadow:0 12px 35px #0008;border-radius:3px;background:#fff}
+  .download-row{display:flex;gap:9px;margin-top:12px}
+  .download-row .btn{flex:1}
+  .message{min-height:1.4em;color:#ffd2a4;font-size:.85rem;margin-top:10px}
+  .tip{margin-top:16px;background:#120e20;border:1px solid var(--line);padding:12px;border-radius:12px;color:var(--muted);font-size:.82rem;line-height:1.55}
+  footer{text-align:center;color:#9e91b2;font-size:.8rem;margin-top:24px;line-height:1.6}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  @media(max-width:800px){.layout{grid-template-columns:1fr}.shell{width:min(100% - 22px,620px);padding-top:18px}.panel{padding:16px}}
+  @media(max-width:390px){.controls .btn{flex:1}.slots{gap:6px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="eyebrow">🎃 SPOOKY SEASON · PHOTO LAB</div>
+    <h1>HALLOWEEN <span>PHOTO BOOTH</span></h1>
+    <p class="intro">세 장의 순간을 모아 나만의 할로윈 포토 스트립을 만들어 봐<br>사진은 이 브라우저 안에서 처리하고, 완성된 이미지를 내려받을 수 있어</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel" aria-labelledby="cameraHeading">
+      <h2 id="cameraHeading">📸 01. 사진 준비하기</h2>
+      <p class="sub">카메라로 찍거나 기기에 있는 사진을 업로드해 봐</p>
+      <div class="camera-stage" id="cameraStage">
+        <div class="camera-placeholder" id="placeholder"><span class="big">👻</span><strong>카메라를 시작하거나 사진을 업로드해 줘</strong><br><small>카메라는 HTTPS 또는 localhost에서 사용할 수 있어</small></div>
+        <video id="video" autoplay playsinline muted hidden></video>
+        <img id="uploadPreview" class="upload-preview" alt="업로드한 사진 미리보기" hidden>
+        <span class="camera-status" id="cameraStatus">준비 중</span>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="startCamera">카메라 시작</button>
+        <button class="btn" id="captureBtn" disabled>📷 사진 찍기</button>
+        <label class="btn file-label" for="fileInput">🖼️ 사진 업로드</label>
+        <input id="fileInput" type="file" accept="image/*" multiple>
+      </div>
+      <div class="counter"><span>내 사진</span><strong id="countLabel">0 / 3</strong></div>
+      <div class="slots" id="slots" aria-live="polite">
+        <div class="slot">사진 1</div><div class="slot">사진 2</div><div class="slot">사진 3</div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="clearBtn">모두 비우기</button>
+        <button class="btn" id="stopCamera">카메라 끄기</button>
+      </div>
+      <p class="message" id="message" role="status"></p>
+      <div class="tip">🔒 <strong>개인정보 안내</strong> — 이 페이지는 사진을 서버로 전송하지 않아. 다만 다른 사람이 쓰는 기기라면 작업 후 사진을 비워 줘</div>
+    </section>
+
+    <section class="panel" aria-labelledby="designHeading">
+      <h2 id="designHeading">✨ 02. 포토 스트립 꾸미기</h2>
+      <p class="sub">프레임, 필터, 스티커를 바꾸면 오른쪽 미리보기에 반영돼</p>
+      <div class="options">
+        <div>
+          <span class="option-title">프레임 테마</span>
+          <div class="choices" id="frameChoices">
+            <button class="choice" data-frame="pumpkin" aria-pressed="true">🎃 호박</button>
+            <button class="choice" data-frame="ghost" aria-pressed="false">👻 유령</button>
+            <button class="choice" data-frame="witch" aria-pressed="false">🦇 마녀의 밤</button>
+            <button class="choice" data-frame="classic" aria-pressed="false">🖤 클래식</button>
+          </div>
+        </div>
+        <div>
+          <span class="option-title">사진 필터</span>
+          <div class="choices" id="filterChoices">
+            <button class="choice" data-filter="none" aria-pressed="true">원본</button>
+            <button class="choice" data-filter="grayscale(1)" aria-pressed="false">흑백</button>
+            <button class="choice" data-filter="sepia(.75)" aria-pressed="false">빈티지</button>
+            <button class="choice" data-filter="contrast(1.25) saturate(1.3)" aria-pressed="false">선명하게</button>
+          </div>
+        </div>
+        <div>
+          <span class="option-title">스티커 선택</span>
+          <div class="choices" id="stickerChoices">
+            <button class="choice sticker" data-sticker="🎃" aria-label="호박 스티커">🎃</button>
+            <button class="choice sticker" data-sticker="👻" aria-label="유령 스티커">👻</button>
+            <button class="choice sticker" data-sticker="🦇" aria-label="박쥐 스티커">🦇</button>
+            <button class="choice sticker" data-sticker="🕷️" aria-label="거미 스티커">🕷️</button>
+            <button class="choice sticker" data-sticker="✨" aria-label="반짝이 스티커">✨</button>
+            <button class="choice sticker" data-sticker="" aria-label="스티커 없음">✖️</button>
+          </div>
+        </div>
+        <div>
+          <span class="option-title">짧은 문구</span>
+          <label class="sr-only" for="captionInput">포토 스트립에 넣을 문구</label>
+          <input id="captionInput" maxlength="32" placeholder="예: BOO! HAVE A SPOOKY DAY" value="HAPPY HALLOWEEN"
+            style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid #5b486f;background:#100d1c;color:white">
+        </div>
+      </div>
+      <h2 style="margin-top:22px">🖼️ 03. 완성 미리보기</h2>
+      <p class="sub">사진을 찍거나 업로드하면 포토 스트립이 자동으로 업데이트돼</p>
+      <div class="preview-wrap"><canvas id="stripCanvas" width="600" height="1500" aria-label="완성된 포토 스트립 미리보기"></canvas></div>
+      <div class="download-row">
+        <button class="btn purple" id="downloadBtn">⬇️ PNG 저장</button>
+        <button class="btn" id="resetDesignBtn">디자인 초기화</button>
+      </div>
+      <p class="message" id="designMessage" role="status"></p>
+    </section>
+  </main>
+  <footer>MADE FOR A LITTLE HALLOWEEN MAGIC · HTML + CSS + JavaScript<br>카메라 기능은 브라우저 권한이 필요해 · 사진 저장은 사용자가 직접 눌렀을 때만 진행돼</footer>
+</div>
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const video = $("video");
+  const placeholder = $("placeholder");
+  const uploadPreview = $("uploadPreview");
+  const cameraStatus = $("cameraStatus");
+  const captureBtn = $("captureBtn");
+  const slotsEl = $("slots");
+  const countLabel = $("countLabel");
+  const message = $("message");
+  const designMessage = $("designMessage");
+  const canvas = $("stripCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const MAX_PHOTOS = 3;
+  const photos = [];
+  let stream = null;
+  let activeFrame = "pumpkin";
+  let activeFilter = "none";
+  let activeSticker = "🎃";
+  let uploadedObjectUrl = null;
+
+  const frameThemes = {
+    pumpkin: { bg:"#21102e", border:"#ff8a28", accent:"#ffb347", title:"#fff0d5", name:"PUMPKIN NIGHT", emoji:"🎃" },
+    ghost:   { bg:"#e9e3f5", border:"#8c69c6", accent:"#b59ae8", title:"#2a1c42", name:"BOO! BOO! BOO!", emoji:"👻" },
+    witch:   { bg:"#10182b", border:"#a879ff", accent:"#ff6b9d", title:"#f5eaff", name:"WITCHING HOUR", emoji:"🦇" },
+    classic: { bg:"#fffaf1", border:"#22202a", accent:"#22202a", title:"#22202a", name:"SPOOKY MEMORIES", emoji:"✦" }
+  };
+
+  function setMessage(text) { message.textContent = text; }
+  function setDesignMessage(text) { designMessage.textContent = text; }
+
+  function updateCameraView() {
+    const hasStream = Boolean(stream);
+    const hasUpload = Boolean(uploadPreview.src && !uploadPreview.hidden);
+    video.hidden = !hasStream;
+    uploadPreview.hidden = hasStream || !hasUpload;
+    placeholder.hidden = hasStream || hasUpload;
+    captureBtn.disabled = !hasStream || photos.length >= MAX_PHOTOS;
+    cameraStatus.textContent = hasStream ? "카메라 연결됨" : (hasUpload ? "업로드 사진 미리보기" : "준비 완료");
+  }
+
+  async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMessage("이 브라우저에서는 카메라를 사용할 수 없어. HTTPS/localhost에서 열거나 사진을 업로드해 줘");
+      return;
+    }
+    stopCamera(false);
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      updateCameraView();
+      setMessage("카메라가 준비됐어. 포즈를 취하고 사진 찍기를 눌러 줘");
+    } catch (err) {
+      stream = null;
+      updateCameraView();
+      const reason = err && err.name === "NotAllowedError" ? "카메라 권한을 허용해 줘" :
+        err && err.name === "NotFoundError" ? "사용할 수 있는 카메라를 찾지 못했어" :
+        "카메라를 시작하지 못했어. 권한과 브라우저 설정을 확인해 줘";
+      setMessage(reason);
+    }
+  }
+
+  function stopCamera(showMessage = true) {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+    updateCameraView();
+    if (showMessage) setMessage("카메라를 껐어");
+  }
+
+  function makePhotoFromCanvas(source, mirror = false) {
+    const w = source.videoWidth || source.naturalWidth || source.width;
+    const h = source.videoHeight || source.naturalHeight || source.height;
+    if (!w || !h) throw new Error("사진이 아직 준비되지 않았어");
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const cctx = c.getContext("2d");
+    if (mirror) { cctx.translate(w, 0); cctx.scale(-1, 1); }
+    cctx.drawImage(source, 0, 0, w, h);
+    return c.toDataURL("image/jpeg", .92);
+  }
+
+  function addPhoto(dataUrl) {
+    return new Promise((resolve, reject) => {
+      if (photos.length >= MAX_PHOTOS) {
+        setMessage("사진은 최대 3장까지 넣을 수 있어. 먼저 사진을 지워 줘");
+        reject(new Error("사진은 최대 3장까지 넣을 수 있어"));
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        photos.push({ dataUrl, image: img });
+        renderSlots();
+        drawStrip();
+        updateCameraView();
+        setMessage(`사진 ${photos.length}장을 넣었어!`);
+        resolve();
+      };
+      img.onerror = () => {
+        setMessage("사진을 읽지 못했어. 다른 이미지 파일을 선택해 줘");
+        reject(new Error("이미지를 읽지 못했어"));
+      };
+      img.src = dataUrl;
+    });
+  }
+
+  function capturePhoto() {
+    if (!stream || video.readyState < 2) {
+      setMessage("카메라 화면이 준비될 때까지 잠깐 기다려 줘");
+      return;
+    }
+    try { addPhoto(makePhotoFromCanvas(video, true)).catch(err => setMessage(err.message || "사진을 찍지 못했어")); }
+    catch (err) { setMessage(err.message || "사진을 찍지 못했어"); }
+  }
+
+  function renderSlots() {
+    slotsEl.replaceChildren();
+    for (let i = 0; i < MAX_PHOTOS; i++) {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      if (photos[i]) {
+        const img = document.createElement("img");
+        img.src = photos[i].dataUrl;
+        img.alt = `사진 ${i + 1}`;
+        slot.appendChild(img);
+        const remove = document.createElement("button");
+        remove.className = "remove";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", `사진 ${i + 1} 삭제`);
+        remove.addEventListener("click", () => {
+          photos.splice(i, 1);
+          renderSlots(); drawStrip(); updateCameraView();
+          setMessage("사진 한 장을 삭제했어");
+        });
+        slot.appendChild(remove);
+      } else {
+        slot.textContent = `사진 ${i + 1}`;
+      }
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = `${i + 1}`;
+      slot.appendChild(num);
+      slotsEl.appendChild(slot);
+    }
+    countLabel.textContent = `${photos.length} / ${MAX_PHOTOS}`;
+    captureBtn.disabled = !stream || photos.length >= MAX_PHOTOS;
+  }
+
+  function roundedRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+
+  function drawCoverImage(c, img, x, y, w, h, filter) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    const scale = Math.max(w / iw, h / ih);
+    const sw = w / scale, sh = h / scale;
+    const sx = (iw - sw) / 2, sy = (ih - sh) / 2;
+    c.save();
+    c.beginPath(); c.rect(x, y, w, h); c.clip();
+    c.filter = filter === "none" ? "none" : filter;
+    c.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    c.restore();
+  }
+
+  function drawStrip() {
+    const theme = frameThemes[activeFrame];
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, W, H);
+
+    // Decorative border and tiny stars
+    ctx.strokeStyle = theme.border; ctx.lineWidth = 12; ctx.strokeRect(18, 18, W - 36, H - 36);
+    ctx.strokeStyle = theme.accent; ctx.lineWidth = 3; ctx.strokeRect(34, 34, W - 68, H - 68);
+    ctx.fillStyle = theme.title; ctx.textAlign = "center";
+    ctx.font = "bold 44px system-ui, sans-serif";
+    ctx.fillText(`${theme.emoji} HALLOWEEN ${theme.emoji}`, W / 2, 91);
+    ctx.font = "24px system-ui, sans-serif";
+    ctx.fillText("PHOTO MEMORIES", W / 2, 126);
+
+    const marginX = 72, photoW = W - marginX * 2, photoH = 350, gap = 24, startY = 160;
+    for (let i = 0; i < MAX_PHOTOS; i++) {
+      const y = startY + i * (photoH + gap);
+      ctx.fillStyle = theme.accent;
+      ctx.fillRect(marginX - 7, y - 7, photoW + 14, photoH + 14);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(marginX, y, photoW, photoH);
+      if (photos[i]) {
+        drawCoverImage(ctx, photos[i].image, marginX, y, photoW, photoH, activeFilter);
+        if (activeSticker) {
+          ctx.save();
+          ctx.font = "58px system-ui, Apple Color Emoji, Segoe UI Emoji, sans-serif";
+          ctx.textAlign = "right";
+          ctx.shadowColor = "#0008"; ctx.shadowBlur = 7;
+          ctx.fillText(activeSticker, marginX + photoW - 14, y + 65);
+          ctx.restore();
+        }
+      } else {
+        ctx.fillStyle = "#e8e0ef"; ctx.fillRect(marginX, y, photoW, photoH);
+        ctx.fillStyle = "#79658c"; ctx.textAlign = "center";
+        ctx.font = "bold 34px system-ui, sans-serif";
+        ctx.fillText("YOUR PHOTO", W / 2, y + photoH / 2 - 4);
+        ctx.font = "24px system-ui, sans-serif";
+        ctx.fillText(`NO. ${i + 1}`, W / 2, y + photoH / 2 + 36);
+      }
+    }
+    ctx.fillStyle = theme.title; ctx.textAlign = "center";
+    ctx.font = "bold 30px system-ui, sans-serif";
+    const caption = ($("captionInput").value || "HAPPY HALLOWEEN").trim().slice(0, 32);
+    ctx.fillText(caption.toUpperCase(), W / 2, 1330, W - 70);
+    ctx.font = "22px system-ui, sans-serif";
+    ctx.fillText("TRICK OR TREAT · 2026", W / 2, 1380);
+    ctx.font = "20px system-ui, sans-serif";
+    ctx.fillText("MADE WITH A LITTLE MAGIC ✦", W / 2, 1430);
+  }
+
+  function setPressed(containerId, attr, value) {
+    $(containerId).querySelectorAll("button").forEach(btn => {
+      btn.setAttribute("aria-pressed", btn.dataset[attr] === value ? "true" : "false");
+    });
+  }
+
+  $("startCamera").addEventListener("click", startCamera);
+  $("stopCamera").addEventListener("click", () => stopCamera(true));
+  captureBtn.addEventListener("click", capturePhoto);
+
+  $("fileInput").addEventListener("change", async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      if (photos.length >= MAX_PHOTOS) {
+        setMessage("세 장까지만 넣을 수 있어서 나머지 파일은 건너뛰었어");
+        break;
+      }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("파일을 읽지 못했어"));
+          reader.readAsDataURL(file);
+        });
+        try {
+          await addPhoto(dataUrl);
+          uploadPreview.src = dataUrl;
+          uploadPreview.hidden = false;
+          placeholder.hidden = true;
+          if (stream) stopCamera(false);
+        } catch (err) {
+          if (photos.length >= MAX_PHOTOS) break;
+        }
+      } catch (err) { setMessage(err.message); }
+    }
+    updateCameraView();
+    event.target.value = "";
+  });
+
+  $("clearBtn").addEventListener("click", () => {
+    photos.splice(0, photos.length);
+    renderSlots(); drawStrip(); updateCameraView();
+    setMessage("사진을 모두 비웠어");
+  });
+
+  $("frameChoices").addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-frame]");
+    if (!btn) return;
+    activeFrame = btn.dataset.frame;
+    setPressed("frameChoices", "frame", activeFrame);
+    drawStrip();
+    setDesignMessage("프레임을 바꿨어");
+  });
+
+  $("filterChoices").addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-filter]");
+    if (!btn) return;
+    activeFilter = btn.dataset.filter;
+    setPressed("filterChoices", "filter", activeFilter);
+    drawStrip();
+    setDesignMessage("사진 필터를 적용했어");
+  });
+
+  $("stickerChoices").addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-sticker]");
+    if (!btn) return;
+    activeSticker = btn.dataset.sticker;
+    setPressed("stickerChoices", "sticker", activeSticker);
+    drawStrip();
+    setDesignMessage(activeSticker ? "스티커를 바꿨어" : "스티커를 지웠어");
+  });
+
+  $("captionInput").addEventListener("input", drawStrip);
+
+  $("downloadBtn").addEventListener("click", () => {
+    try {
+      drawStrip();
+      const link = document.createElement("a");
+      link.download = "halloween-photo-strip.png";
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setDesignMessage("PNG 저장을 시작했어. 다운로드 폴더를 확인해 줘");
+    } catch (err) {
+      setDesignMessage("이미지를 저장하지 못했어. 브라우저를 다시 열고 시도해 줘");
+    }
+  });
+
+  $("resetDesignBtn").addEventListener("click", () => {
+    activeFrame = "pumpkin"; activeFilter = "none"; activeSticker = "🎃";
+    $("captionInput").value = "HAPPY HALLOWEEN";
+    setPressed("frameChoices", "frame", activeFrame);
+    setPressed("filterChoices", "filter", activeFilter);
+    setPressed("stickerChoices", "sticker", activeSticker);
+    drawStrip();
+    setDesignMessage("디자인을 처음 상태로 돌렸어");
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl);
+  });
+
+  renderSlots();
+  updateCameraView();
+  drawStrip();
+})();
+</script>
+</body>
+</html>
